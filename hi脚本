@@ -1,0 +1,299 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "hi中心（死亡之死）",
+    Icon = 0,
+    LoadingTitle = "hi中心",
+    LoadingSubtitle = "作者：qazqw258369",
+    Theme = "Default",
+
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false,
+
+    ConfigurationSaving = {
+       Enabled = true,
+       FolderName = nil,
+       FileName = "大中心"
+    },
+
+    Discord = {
+       Enabled = false,
+       Invite = "无邀请链接",
+       RememberJoins = true
+    },
+
+    KeySystem = false,
+    KeySettings = {
+       Title = "需要验证",
+       Subtitle = "密钥系统",
+       Note = "密钥为 death",
+       FileName = "密钥",
+       SaveKey = true,
+       GrabKeyFromSite = false,
+       Key = {"death"}
+    }
+})
+
+-- 玩家Tab
+local Tab = Window:CreateTab("玩家", 4483362458)
+
+local PlayerSection = Tab:CreateSection("体力")
+Tab:CreateButton({
+    Name = "无限体力（支持所有注入器）",
+    Callback = function()
+        local player = game:GetService("Players").LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        if character:GetAttribute("MaxStamina") ~= nil then
+            character:SetAttribute("MaxStamina", math.huge)
+        elseif player:GetAttribute("MaxStamina") ~= nil then
+            player:SetAttribute("MaxStamina", math.huge)
+        else
+            for _, obj in pairs({character, player, character:FindFirstChildOfClass("Humanoid")}) do
+                if obj and obj:GetAttributes() then
+                    for name, _ in pairs(obj:GetAttributes()) do
+                        if name:lower():find("stamina") then
+                            obj:SetAttribute(name, math.huge)
+                        end
+                    end
+                end
+            end
+        end
+        Rayfield:Notify({
+            Title = "无限体力",
+            Content = "最大体力已设为无限",
+            Duration = 3
+        })
+    end
+})
+
+Tab:CreateSection("实用功能")
+Tab:CreateButton({
+    Name = "穿越杀手专属墙",
+    Callback = function()
+        local killerOnlyFolder = game:GetService("Workspace"):FindFirstChild("GameAssets"):FindFirstChild("Map"):FindFirstChild("Config"):FindFirstChild("KillerOnly")
+        if killerOnlyFolder then
+            for _, part in pairs(killerOnlyFolder:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+            Rayfield:Notify({
+                Title = "穿墙开启",
+                Content = "你现在可以穿过杀手专属墙了",
+                Duration = 5.7
+            })
+        else
+            Rayfield:Notify({
+                Title = "错误 404",
+                Content = "未找到杀手专属文件夹",
+                Duration = 3
+            })
+        end
+    end
+})
+
+Tab:CreateSection("速度与力量")
+local DefaultWalkSpeed = 16
+Tab:CreateSlider({
+    Name = "移动速度",
+    Range = {7, 250},
+    Increment = 1,
+    Suffix = "速度",
+    CurrentValue = DefaultWalkSpeed,
+    Flag = "WalkspeedSlider",
+    Callback = function(Value)
+        local player = game:GetService("Players").LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        if character then
+            character:SetAttribute("WalkSpeed", Value)
+        end
+    end,
+})
+
+local DefaultJumpPower = 50
+Tab:CreateSection("跳跃力")
+local JumpPowerEnabled = false
+local JumpPowerSlider
+Tab:CreateToggle({
+    Name = "启用跳跃力",
+    CurrentValue = false,
+    Flag = "JumpPowerToggle",
+    Callback = function(Value)
+        JumpPowerEnabled = Value
+        local player = game:GetService("Players").LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            if Value then
+                humanoid.JumpPower = JumpPowerSlider.CurrentValue
+            else
+                humanoid.JumpPower = DefaultJumpPower
+            end
+        end
+    end,
+})
+JumpPowerSlider = Tab:CreateSlider({
+    Name = "跳跃力",
+    Range = {50, 300},
+    Increment = 5,
+    Suffix = "力度",
+    CurrentValue = DefaultJumpPower,
+    Flag = "JumpPowerSlider",
+    Callback = function(Value)
+        if JumpPowerEnabled then
+            local player = game:GetService("Players").LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.JumpPower = Value
+            end
+        end
+    end,
+})
+
+-- 透视Tab
+local ESPTab = Window:CreateTab("透视", 4483362458)
+ESPTab:CreateSection("玩家透视")
+local ESPEnabled = false
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "ESP"
+ESPFolder.Parent = game.CoreGui
+
+local function CreateESP(player)
+    if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = player.Name
+        billboard.AlwaysOnTop = true
+        billboard.Size = UDim2.new(0, 200, 0, 50)
+        billboard.StudsOffset = Vector3.new(0, 3, 0)
+        billboard.Adornee = player.Character.HumanoidRootPart
+        billboard.Parent = ESPFolder
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Name = "NameLabel"
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = player.Name
+        nameLabel.TextSize = 18
+        nameLabel.Font = Enum.Font.SourceSansBold
+        nameLabel.TextStrokeTransparency = 0
+        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        nameLabel.Parent = billboard
+        local playerRole = "未知"
+        for _, folder in pairs(game:GetService("Workspace"):GetChildren()) do
+            if folder:IsA("Folder") then
+                if (folder.Name == "Killer" or folder.Name == "Survivor" or folder.Name == "Ghost") then
+                    for _, char in pairs(folder:GetChildren()) do
+                        if char.Name == player.Name then
+                            playerRole = folder.Name
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        if playerRole == "Killer" then
+            nameLabel.TextColor3 = Color3.new(1, 0, 0)
+        elseif playerRole == "Survivor" then
+            nameLabel.TextColor3 = Color3.new(0, 1, 0)
+        elseif playerRole == "Ghost" then
+            nameLabel.TextColor3 = Color3.new(0, 0, 1)
+        else
+            nameLabel.TextColor3 = Color3.new(1, 1, 1)
+        end
+    end
+end
+local function RemoveESP(player)
+    if ESPFolder:FindFirstChild(player.Name) then
+        ESPFolder[player.Name]:Destroy()
+    end
+end
+local function UpdateESP()
+    if ESPEnabled then
+        for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+            if player ~= game:GetService("Players").LocalPlayer then
+                if not ESPFolder:FindFirstChild(player.Name) then
+                    CreateESP(player)
+                end
+            end
+        end
+    else
+        ESPFolder:ClearAllChildren()
+    end
+end
+ESPTab:CreateToggle({
+    Name = "玩家透视开关",
+    CurrentValue = false,
+    Flag = "ESPToggle",
+    Callback = function(Value)
+        ESPEnabled = Value
+        UpdateESP()
+        if Value then
+            game:GetService("Players").PlayerAdded:Connect(function(player)
+                if ESPEnabled then
+                    CreateESP(player)
+                end
+            end)
+            game:GetService("Players").PlayerRemoving:Connect(function(player)
+                RemoveESP(player)
+            end)
+        end
+    end,
+})
+
+ESPTab:CreateSection("阵营透视")
+-- 幸存者透视
+local SurvivorESPEnabled = false
+local SurvivorESPFolder = Instance.new("Folder")
+SurvivorESPFolder.Name = "幸存者透视"
+SurvivorESPFolder.Parent = game.CoreGui
+ESPTab:CreateToggle({
+    Name = "幸存者透视",
+    CurrentValue = false,
+    Flag = "SurvivorESPToggle",
+    Callback = function(Value)
+        SurvivorESPEnabled = Value
+        if Value then
+            local teamsFolder = game:GetService("Workspace").GameAssets.Teams
+            if teamsFolder and teamsFolder:FindFirstChild("Survivor") then
+                for _, player in pairs(teamsFolder.Survivor:GetChildren()) do
+                    if player:FindFirstChild("HumanoidRootPart") then
+                        local billboard = Instance.new("BillboardGui")
+                        billboard.Name = player.Name
+                        billboard.AlwaysOnTop = true
+                        billboard.Size = UDim2.new(0, 200, 0, 50)
+                        billboard.StudsOffset = Vector3.new(0, 3, 0)
+                        billboard.Adornee = player.HumanoidRootPart
+                        billboard.Parent = SurvivorESPFolder
+                        local nameLabel = Instance.new("TextLabel")
+                        nameLabel.Name = "NameLabel"
+                        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+                        nameLabel.BackgroundTransparency = 1
+                        nameLabel.Text = player.Name
+                        nameLabel.TextSize = 18
+                        nameLabel.Font = Enum.Font.SourceSansBold
+                        nameLabel.TextStrokeTransparency = 0
+                        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+                        nameLabel.TextColor3 = Color3.new(0, 1, 0)
+                        nameLabel.Parent = billboard
+                    end
+                end
+            end
+        else
+            SurvivorESPFolder:ClearAllChildren()
+        end
+    end,
+})
+-- 杀手透视
+local KillerESPEnabled = false
+local KillerESPFolder = Instance.new("Folder")
+KillerESPFolder.Name = "杀手透视"
+KillerESPFolder.Parent = game.CoreGui
+ESPTab:CreateToggle({
+    Name = "杀手透视",
+    CurrentValue = false,
+    Flag = "KillerESPToggle",
+    Callback = function(Value)
+        KillerESPEnabled = Value
+        if Value then
+            local teamsFolder = game:GetService("Workspace").GameAssets.Teams
+            if teamsFolder and tea
